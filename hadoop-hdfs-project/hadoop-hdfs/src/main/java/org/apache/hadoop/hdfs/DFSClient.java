@@ -1076,6 +1076,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
   
   public static boolean isLocalAddress(InetSocketAddress targetAddr) {
     InetAddress addr = targetAddr.getAddress();
+    // 从 Cache 中拿数据，为什么效率这么低呢？
     Boolean cached = localAddrMap.get(addr.getHostAddress());
     if (cached != null) {
       if (LOG.isTraceEnabled()) {

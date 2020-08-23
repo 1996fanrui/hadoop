@@ -510,11 +510,13 @@ implements ByteBufferReadable, CanSetDropBehind, CanSetReadahead,
   private LocatedBlock fetchBlockAt(long offset, long length, boolean useCache)
       throws IOException {
     synchronized(infoLock) {
+      // 找当前  Block
       int targetBlockIdx = locatedBlocks.findBlock(offset);
       if (targetBlockIdx < 0) { // block is not cached
         targetBlockIdx = LocatedBlocks.getInsertIndex(targetBlockIdx);
         useCache = false;
       }
+      // 从 NN 拉数据块的位置
       if (!useCache) { // fetch blocks
         final LocatedBlocks newBlocks = (length == 0)
             ? dfsClient.getLocatedBlocks(src, offset)
@@ -547,8 +549,11 @@ implements ByteBufferReadable, CanSetDropBehind, CanSetReadahead,
     }
     synchronized(infoLock) {
       final List<LocatedBlock> blocks;
+      // hdfs 文件的完整长度
       final long lengthOfCompleteBlk = locatedBlocks.getFileLength();
+      // 是否读完整文件内部？啥意思，offset
       final boolean readOffsetWithinCompleteBlk = offset < lengthOfCompleteBlk;
+      // 读取的数据，是否超过了整个文件的长度，可能读取的是一个正在写入的文件？
       final boolean readLengthPastCompleteBlk = offset + length > lengthOfCompleteBlk;
 
       if (readOffsetWithinCompleteBlk) {
@@ -582,9 +587,11 @@ implements ByteBufferReadable, CanSetDropBehind, CanSetReadahead,
       long remaining = length;
       long curOff = offset;
       while(remaining > 0) {
+        // 获取当前 offset 对应的 Block
         LocatedBlock blk = fetchBlockAt(curOff, remaining, true);
         assert curOff >= blk.getStartOffset() : "Block not found";
         blockRange.add(blk);
+        // 计算本次读取的 bytes 长度
         long bytesRead = blk.getStartOffset() + blk.getBlockSize() - curOff;
         remaining -= bytesRead;
         curOff += bytesRead;
@@ -963,6 +970,7 @@ implements ByteBufferReadable, CanSetDropBehind, CanSetReadahead,
       Collection<DatanodeInfo> ignoredNodes) throws IOException {
     while (true) {
       try {
+        // 获取最优的 DN
         return getBestNodeDNAddrPair(block, ignoredNodes);
       } catch (IOException ie) {
         String errMsg = getBestNodeDNAddrPairErrorString(block.getLocations(),
@@ -1018,11 +1026,14 @@ implements ByteBufferReadable, CanSetDropBehind, CanSetReadahead,
    */
   private DNAddrPair getBestNodeDNAddrPair(LocatedBlock block,
       Collection<DatanodeInfo> ignoredNodes) throws IOException {
+    // nodes 表示当前 Block 的多个副本对应的 DN 信息，
+    // storageTypes 表示多个副本的存储类型，SSD 还是 HDD 等
     DatanodeInfo[] nodes = block.getLocations();
     StorageType[] storageTypes = block.getStorageTypes();
     DatanodeInfo chosenNode = null;
     StorageType storageType = null;
     if (nodes != null) {
+      // 这里好像默认选择的就是第一个 DN
       for (int i = 0; i < nodes.length; i++) {
         if (!deadNodes.containsKey(nodes[i])
             && (ignoredNodes == null || !ignoredNodes.contains(nodes[i]))) {
@@ -1046,6 +1057,7 @@ implements ByteBufferReadable, CanSetDropBehind, CanSetReadahead,
     if (DFSClient.LOG.isDebugEnabled()) {
       DFSClient.LOG.debug("Connecting to datanode " + dnAddr);
     }
+    // 这里最耗时, 方法内耗时部分是工具类，所以可以加 Cache
     InetSocketAddress targetAddr = NetUtils.createSocketAddr(dnAddr);
     return new DNAddrPair(chosenNode, targetAddr, storageType, block);
   }
@@ -1080,9 +1092,11 @@ implements ByteBufferReadable, CanSetDropBehind, CanSetReadahead,
       Map<ExtendedBlock, Set<DatanodeInfo>> corruptedBlockMap)
       throws IOException {
     while (true) {
+      //  选择 DN，并创建 socket 连接
       DNAddrPair addressPair = chooseDataNode(block, null);
       block = addressPair.block;
       try {
+        // 连接 DN，获取数据
         actualGetFromOneDataNode(addressPair, start, end, buf, offset,
             corruptedBlockMap);
         return;
@@ -1141,6 +1155,7 @@ implements ByteBufferReadable, CanSetDropBehind, CanSetReadahead,
         DFSClientFaultInjector.get().fetchFromDatanodeException();
         Token<BlockTokenIdentifier> blockToken = block.getBlockToken();
         int len = (int) (end - start + 1);
+        // 这里 build 方法比较耗时
         reader = new BlockReaderFactory(dfsClient.getConf()).
             setInetSocketAddress(targetAddr).
             setRemotePeerFactory(dfsClient).
@@ -1399,6 +1414,7 @@ implements ByteBufferReadable, CanSetDropBehind, CanSetReadahead,
     TraceScope scope =
         dfsClient.getPathTraceScope("DFSInputStream#byteArrayPread", src);
     try {
+      // p read 表示 position read，即:根据指定的位置读数据
       return pread(position, buffer, offset, length);
     } finally {
       scope.close();
@@ -1424,15 +1440,20 @@ implements ByteBufferReadable, CanSetDropBehind, CanSetReadahead,
     
     // determine the block and byte range within the block
     // corresponding to position and realLen
+    // 根据 offset 和 len 去获取要相应的的 hdfs Block 列表，
+    // 如果 Client 没有缓存，需要访问 NN
+    // LocatedBlock 里封装了每个 Block 需要读取的 offset、len、对应的 DN、Block 元数据等
     List<LocatedBlock> blockRange = getBlockRange(position, realLen);
     int remaining = realLen;
     Map<ExtendedBlock,Set<DatanodeInfo>> corruptedBlockMap 
       = new HashMap<ExtendedBlock, Set<DatanodeInfo>>();
     for (LocatedBlock blk : blockRange) {
+      // targetStart 表示每个 Block 内部读取的 offset
       long targetStart = position - blk.getStartOffset();
       long bytesToRead = Math.min(remaining, blk.getBlockSize() - targetStart);
       try {
         if (dfsClient.isHedgedReadsEnabled()) {
+          // hedged read 含义：指定时间内没返回要读取的数据，则从其他 副本去读
           hedgedFetchBlockByteRange(blk, targetStart, targetStart + bytesToRead
               - 1, buffer, offset, corruptedBlockMap);
         } else {

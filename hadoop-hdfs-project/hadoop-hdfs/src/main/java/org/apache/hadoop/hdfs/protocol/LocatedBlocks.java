@@ -118,10 +118,21 @@ public class LocatedBlocks {
    */
   public int findBlock(long offset) {
     // create fake block of size 0 as a key
+    // 这里创建一个假的 Block，仅仅用于查找操作
+    // 火焰图显示这里比较耗时，构造器里比较复杂，这里既然是假的，是不是没有必要走这个复杂的构造器
+    // 解决思路：搞一个无参构造器，或者搞一个 FakeLocatedBlock ，
+    // FakeLocatedBlock 是 LocatedBlock 子类，用于构造假的 LocatedBlock，提高性能
     LocatedBlock key = new LocatedBlock(
         new ExtendedBlock(), new DatanodeInfo[0], 0L, false);
     key.setStartOffset(offset);
     key.getBlock().setNumBytes(1);
+    // 这里是二分查找 lgn，能不能优化成 O(1)
+    // 思路一：知道文件每个 Block 的大小，然后整除就能知道自己属于哪个 Block
+    //        所以问题来了，每个 Block 的大小是否严格一致（除了最后一个 Block）？
+    //        查看了 hdfs 的部分文件，发现是严格一致的
+    // 思路二：如果 Block 大小不是严格一致，那么也可以根据 Block 大致大小推算出属于第一个 Block，
+    //        如果不是这一个 Block，再去二分查找
+    //        大概率会直接命中
     Comparator<LocatedBlock> comp = 
       new Comparator<LocatedBlock>() {
         // Returns 0 iff a is inside b or b is inside a

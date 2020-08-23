@@ -35,12 +35,15 @@ import com.google.common.collect.Lists;
  * and other block metadata (E.g. the file offset associated with this
  * block, whether it is corrupt, a location is cached in memory,
  * security token, etc).
+ * Block 的副本与对应的 Datanode关联信息 以及 块的元数据信息的
+ * （例如，块关联的文件偏移、是否损坏、位置是否缓存在内存中等）。
  */
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
 public class LocatedBlock {
 
   private final ExtendedBlock b;
+  // 当前 Block 的第一个 bytes 在整个 HFile 中对应的 offset 值
   private long offset;  // offset of the first byte of the block in the file
   private final DatanodeInfoWithStorage[] locs;
   /** Cached storage ID for each replica */
@@ -165,7 +168,8 @@ public class LocatedBlock {
   public long getStartOffset() {
     return offset;
   }
-  
+
+  // 当前 Block 要读取的文件长度
   public long getBlockSize() {
     return b.getNumBytes();
   }

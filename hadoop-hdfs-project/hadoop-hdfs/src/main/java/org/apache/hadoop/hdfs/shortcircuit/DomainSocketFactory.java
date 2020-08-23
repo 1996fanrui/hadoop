@@ -145,7 +145,9 @@ public class DomainSocketFactory {
       return PathInfo.NOT_CONFIGURED;
     }
     // UNIX domain sockets can only be used to talk to local peers
+    // 判断是否是本地的地址
     if (!DFSClient.isLocalAddress(addr)) return PathInfo.NOT_CONFIGURED;
+    // 完全是一个字符串替换操作，可以使用 Cache
     String escapedPath = DomainSocket.getEffectivePath(
         conf.getDomainSocketPath(), addr.getPort());
     PathState status = pathMap.getIfPresent(escapedPath);

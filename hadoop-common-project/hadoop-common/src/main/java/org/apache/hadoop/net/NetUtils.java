@@ -193,6 +193,7 @@ public class NetUtils {
     boolean hasScheme = target.contains("://");    
     URI uri = null;
     try {
+      // 从 address 转换成 URL 比较耗时，这里是工具方法，明显可以进行 Cache
       uri = hasScheme ? URI.create(target) : URI.create("dummyscheme://"+target);
     } catch (IllegalArgumentException e) {
       throw new IllegalArgumentException(

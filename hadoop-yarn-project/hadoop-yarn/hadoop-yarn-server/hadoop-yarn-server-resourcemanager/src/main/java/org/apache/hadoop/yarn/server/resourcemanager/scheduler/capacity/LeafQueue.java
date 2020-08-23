@@ -172,7 +172,10 @@ public class LeafQueue extends AbstractCSQueue {
     }
     maxApplicationsPerUser = Math.min(maxApplications,
         (int)(maxApplications * (userLimit / 100.0f) * userLimitFactor));
-    
+
+    // 相应队列 的 maximum-am-resource-percent ，
+    // 如果该队列没有配置，则使用 全局的 maximum-am-resource-percent
+    // 全局也没有配置，使用默认值 0.1
     maxAMResourcePerQueuePercent =
         conf.getMaximumApplicationMasterResourcePerQueuePercent(getQueuePath());
 

@@ -330,6 +330,7 @@ public class BlockReaderFactory implements ShortCircuitReplicaCreator {
           return reader;
         }
       } else {
+        // 短路读走这里
         reader = getBlockReaderLocal();
         if (reader != null) {
           if (LOG.isTraceEnabled()) {
@@ -409,6 +410,7 @@ public class BlockReaderFactory implements ShortCircuitReplicaCreator {
           "for short-circuit reads.");
     }
     if (pathInfo == null) {
+      // 每次耗时 3%
       pathInfo = clientContext.getDomainSocketFactory().
                       getPathInfo(inetSocketAddress, conf);
     }
@@ -419,6 +421,7 @@ public class BlockReaderFactory implements ShortCircuitReplicaCreator {
     }
     ShortCircuitCache cache = clientContext.getShortCircuitCache();
     ExtendedBlockId key = new ExtendedBlockId(block.getBlockId(), block.getBlockPoolId());
+    //
     ShortCircuitReplicaInfo info = cache.fetchOrCreate(key, this);
     InvalidToken exc = info.getInvalidTokenException();
     if (exc != null) {

@@ -74,7 +74,7 @@ public class FSDataInputStream extends DataInputStream
   
   /**
    * Read bytes from the given position in the stream to the given buffer.
-   *
+   * 读指定位置的数据到 buffer 中
    * @param position  position in the input stream to seek
    * @param buffer    buffer into which data is read
    * @param offset    offset into the buffer in which data is written
