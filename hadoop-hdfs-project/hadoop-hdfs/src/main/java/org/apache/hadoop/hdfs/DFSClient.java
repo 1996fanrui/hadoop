@@ -86,6 +86,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -1062,27 +1063,26 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
     }
   }
   
-  private static final Map<String, Boolean> localAddrMap = Collections
-      .synchronizedMap(new HashMap<String, Boolean>());
+  private static final Map<InetAddress, Boolean> localAddrMap = new ConcurrentHashMap<>();
   
   public static boolean isLocalAddress(InetSocketAddress targetAddr) {
     InetAddress addr = targetAddr.getAddress();
-    Boolean cached = localAddrMap.get(addr.getHostAddress());
+    Boolean cached = localAddrMap.get(addr);
     if (cached != null) {
-      if (LOG.isTraceEnabled()) {
-        LOG.trace("Address " + targetAddr +
-                  (cached ? " is local" : " is not local"));
-      }
+//      if (LOG.isTraceEnabled()) {
+//        LOG.trace("Address " + targetAddr +
+//                  (cached ? " is local" : " is not local"));
+//      }
       return cached;
     }
     
     boolean local = NetUtils.isLocalAddress(addr);
 
-    if (LOG.isTraceEnabled()) {
-      LOG.trace("Address " + targetAddr +
-                (local ? " is local" : " is not local"));
-    }
-    localAddrMap.put(addr.getHostAddress(), local);
+//    if (LOG.isTraceEnabled()) {
+//      LOG.trace("Address " + targetAddr +
+//                (local ? " is local" : " is not local"));
+//    }
+    localAddrMap.put(addr, local);
     return local;
   }
   

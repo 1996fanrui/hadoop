@@ -27,10 +27,14 @@ import java.io.OutputStream;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.net.ImmutablePair;
 import org.apache.hadoop.util.NativeCodeLoader;
 import org.apache.hadoop.util.CloseableReferenceCount;
 
@@ -115,6 +119,9 @@ public class DomainSocket implements Closeable {
     validateBindPaths = false;
   }
 
+  private static Map<ImmutablePair<String, Integer>, String> effectivePathCache =
+          new ConcurrentHashMap<>();
+
   /**
    * Given a path and a port, compute the effective path by replacing
    * occurrences of _PORT with the port.  This is mainly to make it 
@@ -126,7 +133,16 @@ public class DomainSocket implements Closeable {
    * @return                The effective path
    */
   public static String getEffectivePath(String path, int port) {
-    return path.replace("_PORT", String.valueOf(port));
+    ImmutablePair<String, Integer> cacheKey = ImmutablePair.of(path, port);
+    String result = effectivePathCache.get(cacheKey);
+    if (result != null) {
+      return result;
+    }
+
+    result = path.replace("_PORT", String.valueOf(port));
+
+    effectivePathCache.put(cacheKey, result);
+    return result;
   }
 
   /**

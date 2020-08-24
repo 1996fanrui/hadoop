@@ -66,6 +66,8 @@ public class NetUtils {
   
   private static Map<String, String> hostToResolved = 
                                      new HashMap<String, String>();
+  private static Map<ImmutablePair<String, Integer>, InetSocketAddress> socketAddressCache =
+          new ConcurrentHashMap<>();
   /** text to point users elsewhere: {@value} */
   private static final String FOR_MORE_DETAILS_SEE
       = " For more details see:  ";
@@ -181,6 +183,11 @@ public class NetUtils {
   public static InetSocketAddress createSocketAddr(String target,
                                                    int defaultPort,
                                                    String configName) {
+    ImmutablePair<String, Integer> hostPort = ImmutablePair.of(target, defaultPort);
+    InetSocketAddress inetSocketAddress = socketAddressCache.get(hostPort);
+    if (inetSocketAddress != null) {
+      return inetSocketAddress;
+    }
     String helpText = "";
     if (configName != null) {
       helpText = " (configuration property '" + configName + "')";
@@ -214,7 +221,9 @@ public class NetUtils {
           "Does not contain a valid host:port authority: " + target + helpText
       );
     }
-    return createSocketAddrForHost(host, port);
+    inetSocketAddress = createSocketAddrForHost(host, port);
+    socketAddressCache.put(hostPort, inetSocketAddress);
+    return inetSocketAddress;
   }
 
   /**

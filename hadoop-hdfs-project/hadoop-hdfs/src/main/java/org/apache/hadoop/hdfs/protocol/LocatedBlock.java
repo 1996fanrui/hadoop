@@ -51,7 +51,7 @@ public class LocatedBlock {
   // else false. If block has few corrupt replicas, they are filtered and 
   // their locations are not part of this object
   private boolean corrupt;
-  private Token<BlockTokenIdentifier> blockToken = new Token<BlockTokenIdentifier>();
+  private Token<BlockTokenIdentifier> blockToken;
   /**
    * List of cached datanode locations
    */
@@ -60,6 +60,14 @@ public class LocatedBlock {
   // Used when there are no locations
   private static final DatanodeInfoWithStorage[] EMPTY_LOCS =
       new DatanodeInfoWithStorage[0];
+
+  private LocatedBlock(){
+      this.b = new ExtendedBlock();
+      this.locs = EMPTY_LOCS;
+  }
+
+  public static class FakeLocatedBlock extends LocatedBlock {
+  }
 
   public LocatedBlock(ExtendedBlock b, DatanodeInfo[] locs) {
     this(b, locs, -1, false); // startOffset is unknown
@@ -90,6 +98,7 @@ public class LocatedBlock {
   public LocatedBlock(ExtendedBlock b, DatanodeInfo[] locs, String[] storageIDs,
                       StorageType[] storageTypes, long startOffset,
                       boolean corrupt, DatanodeInfo[] cachedLocs) {
+    this.blockToken = new Token<>();
     this.b = b;
     this.offset = startOffset;
     this.corrupt = corrupt;

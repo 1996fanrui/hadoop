@@ -324,17 +324,17 @@ public class BlockReaderFactory implements ShortCircuitReplicaCreator {
       if (clientContext.getUseLegacyBlockReaderLocal()) {
         reader = getLegacyBlockReaderLocal();
         if (reader != null) {
-          if (LOG.isTraceEnabled()) {
-            LOG.trace(this + ": returning new legacy block reader local.");
-          }
+//          if (LOG.isTraceEnabled()) {
+//            LOG.trace(this + ": returning new legacy block reader local.");
+//          }
           return reader;
         }
       } else {
         reader = getBlockReaderLocal();
         if (reader != null) {
-          if (LOG.isTraceEnabled()) {
-            LOG.trace(this + ": returning new block reader local.");
-          }
+//          if (LOG.isTraceEnabled()) {
+//            LOG.trace(this + ": returning new block reader local.");
+//          }
           return reader;
         }
       }
@@ -342,10 +342,10 @@ public class BlockReaderFactory implements ShortCircuitReplicaCreator {
     if (conf.domainSocketDataTraffic) {
       reader = getRemoteBlockReaderFromDomain();
       if (reader != null) {
-        if (LOG.isTraceEnabled()) {
-          LOG.trace(this + ": returning new remote block reader using " +
-              "UNIX domain socket on " + pathInfo.getPath());
-        }
+//        if (LOG.isTraceEnabled()) {
+//          LOG.trace(this + ": returning new remote block reader using " +
+//              "UNIX domain socket on " + pathInfo.getPath());
+//        }
         return reader;
       }
     }
@@ -404,10 +404,10 @@ public class BlockReaderFactory implements ShortCircuitReplicaCreator {
   }
 
   private BlockReader getBlockReaderLocal() throws InvalidToken {
-    if (LOG.isTraceEnabled()) {
-      LOG.trace(this + ": trying to construct a BlockReaderLocal " +
-          "for short-circuit reads.");
-    }
+//    if (LOG.isTraceEnabled()) {
+//      LOG.trace(this + ": trying to construct a BlockReaderLocal " +
+//          "for short-circuit reads.");
+//    }
     if (pathInfo == null) {
       pathInfo = clientContext.getDomainSocketFactory().
                       getPathInfo(inetSocketAddress, conf);
@@ -422,18 +422,18 @@ public class BlockReaderFactory implements ShortCircuitReplicaCreator {
     ShortCircuitReplicaInfo info = cache.fetchOrCreate(key, this);
     InvalidToken exc = info.getInvalidTokenException();
     if (exc != null) {
-      if (LOG.isTraceEnabled()) {
-        LOG.trace(this + ": got InvalidToken exception while trying to " +
-            "construct BlockReaderLocal via " + pathInfo.getPath());
-      }
+//      if (LOG.isTraceEnabled()) {
+//        LOG.trace(this + ": got InvalidToken exception while trying to " +
+//            "construct BlockReaderLocal via " + pathInfo.getPath());
+//      }
       throw exc;
     }
     if (info.getReplica() == null) {
-      if (LOG.isTraceEnabled()) {
-        PerformanceAdvisory.LOG.debug(this + ": failed to get " +
-            "ShortCircuitReplica. Cannot construct " +
-            "BlockReaderLocal via " + pathInfo.getPath());
-      }
+//      if (LOG.isTraceEnabled()) {
+//        PerformanceAdvisory.LOG.debug(this + ": failed to get " +
+//            "ShortCircuitReplica. Cannot construct " +
+//            "BlockReaderLocal via " + pathInfo.getPath());
+//      }
       return null;
     }
     return new BlockReaderLocal.Builder(conf).
